@@ -12,26 +12,12 @@ from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
-# def fourier_transform(sample):
-#     n = len(sample)
-#     N = 2*n
-#     Aw = np.zeros(N,dtype=np.complex128)
-#     warray = np.zeros(N,dtype=np.complex128)
-#     for wn in range(N):
-#         for x in range(n):
-#             w = 2*np.pi*wn/N
-#             warray[wn] = w
-#             t = (x-int(n/2))*0.1                        # right
-#             Aw[wn] += 0.1*sample[x]*np.exp(1j*w*t)
-#     return warray, Aw
 
 def fourier_transform(sample):
     n = len(sample)
     N = 2*n
     Aw = np.zeros(2*N,dtype=np.complex128)
     warray = np.zeros(2*N,dtype=np.complex128)
-    # warray = np.zeros(N,dtype=np.complex128)
-    # for wn in range(N):
     for wn in range(2*N):
         for x in range(n):
             w = 2*np.pi*wn/N
@@ -109,41 +95,13 @@ def k0_frequency(dir_name, N, time_limit_list, ticker_list, show=True):
             plt.ylabel('$N(\omega)$',fontsize=16)
             print(idx, ticker_list[idx],time_limit_list[idx])
             plt.plot(warray, w_value, ticker_list[idx], label='t={}'.format(time_limit_list[idx]*0.1))
-            # plt.plot(warray, w_value)
 
-            # x = [x for x in range(7)]
-            # kvals = [2*np.cos(k*2*np.pi/21.0) for k in x]
-            # x = [x for x in [2,3,4]]
-            # kvals = [-2*(np.cos(k*2*np.pi/7.0)) for k in x]
-            # print(kvals)
-            # ys = [1 for i in kvals]
-            # H_mat = get_H_mat(N)
-            # w, v = LA.eig(H_mat)
-            # for kval in w:
-            #     if kval > 0:
-            #         plt.axvline(x=kval,c='r')
-
-            # for i in range(N+1):
-            #     if i % 2 == 1:
-            #         plt.axvline(-2*np.cos(np.pi*i/(401+1)), c='r' )
         idx+=1
     plt.legend()
-    # plt.savefig('N600_U1_real_density.pdf')
     plt.show()  
-
-    # file_root = file_name.split('.')[0]
-    # file_name = '{}_warray.txt'.format(file_root)
-    # file_root = file_name.split('.')[0]
-
-    # file_name = dir_name+'warray.txt'
-    # save_file(file_name,warray,w_value)
 
     wdensity = np.stack([np.array(warray),np.array(w_value)])
     np.save(dir_name+'warray', wdensity)
-    # np.save(dir_name+'warray_{}'.format(time_limit), wdensity)
-    # if show:
-    #     plt.savefig('N401_U1_r100_30step_density.pdf')
-    #     plt.show()  
     return
 
 
@@ -222,14 +180,6 @@ def lpc(y, m):
 
 def get_Green_snapshot_at_center(dirname,t,N):
     Green_snapshot = np.zeros((N),dtype=complex)
-    # if mode == 'analytic':
-    #     file_name = './N{}/Green_center/Green_t{:.3f}.txt'.format(N,t)
-    # else:
-    #     file_name = './N{}/Green_DMRG/Green_t{:.3f}.txt'.format(N,t)
-    # if mode == 'smooth':
-    #     file_name = './N{}_smooth/Green_center/Green_t{:.3f}.txt'.format(N,t)
-    # else:
-    #     file_name = './N{}/Green_center/Green_t{:.3f}.txt'.format(N,t)
     file_name = './{}/Green_t{:.3f}.txt'.format(dirname,t)
     with open(file_name) as f:
         line = [0 for _ in range(N)]
@@ -387,10 +337,6 @@ for files in ['half_results']:
                 residual_list_dict = dict()
                 green_list_dict = dict()
                 cum_green_list= [0.0 for t in range(tlimit_compare)]
-                # for t in range(tlimit_compare):
-                #     residual_list_dict[t] = residual[t]
-                #     green_list_dict[t] = residual[t]  
-                # plt.plot([t*0.1 for t in range(tlimit_compare)], [Green_original_tn[t][int(N/2)-1,int(N/2)-1] for t in range(tlimit_compare)],label='dmrg')        
                 
                 for j in range(t_len):
                     t1 = recursion_step+j*interval_step
@@ -398,11 +344,6 @@ for files in ['half_results']:
                     # Ci[t1] = np.matmul(overlap_pinv, residual[t1].T)        # wrong way to get Ci
                     Ci[t1] = np.matmul(residual[t1], overlap_pinv)        # this should be full
 
-                    # w, v = LA.eig(Ci[t1])
-                    # for kval in w:
-                    #     if np.abs(kval) > 1.0:
-                    #         print(kval)
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label=str(t1))
 
                     for t in range(t1, tlimit_compare):
                     # for t in range(t1, tlimit):
@@ -410,43 +351,13 @@ for files in ['half_results']:
                         residual_list_dict[t] = new_residual[t]
 
                         cum_green_list[t] += np.matmul(Ci[t1], Green_original_tn[t-t1])
-                        # green_list_dict[t] = np.matmul(Ci[t1], Green_original_tn[t-t1])
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [new_residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label='after projection '+str(t1))
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [cum_green_list[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label='after projection '+str(int(0.1*t1)))
 
                     t1_list.append(t1*0.1)
                     residual_dict[t1] = new_residual[t1]
                     residual= new_residual.copy()
-                # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [new_residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label=str(muti_num))
-                # plt.legend()
-                # plt.savefig('./new_multi_projection/{}_multi_improve_residual_same_point.pdf'.format('_'.join(file_name.split('/'))))
-                # plt.show()
-                # raise SystemExit(0)
-
-                # plt.axhline(y=0,c='r')
-                # # plt.plot([t for t in sorted(green_list_dict.keys())], [green_list_dict[t][int(N/2)-1,int(N/2)-1] for t in sorted(residual_list_dict.keys())])
-                # plt.plot([t for t in sorted(residual_list_dict.keys())], [residual_list_dict[t][int(N/2)-1,int(N/2)-1] for t in sorted(residual_list_dict.keys())])
-                # # plt.plot(t1_list, [residual_dict[t][int(N/2)-1,int(N/2)-1] for t in range(recursion_step, recursion_step+t_len)],'r-.',label='residual')
-                # plt.show()
-                # raise SystemExit(0)
-                
-                # plt.tick_params(
-                #     axis='x',          # changes apply to the x-axis
-                #     which='both',      # both major and minor ticks are affected
-                #     bottom=False,      # ticks along the bottom edge are off
-                #     left=False,         # ticks along the top edge are off
-                #     labelbottom=True) # labels along the bottom edge are off
-                # axs[1].plot([t*0.1 for t in range(t1, tlimit_compare)], [-1.0*new_residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)], style_list[c_idx], c=clist[c_idx], label='Range '+str(int(0.1*(start_time - recursion_step))))
-                # axs[1].plot([t*0.1 for t in range(t1, tlimit_compare)], [-1.0*new_residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)], style_list[c_idx], c=clist[c_idx], label='M = '+str(muti_num))
 
                 print(residual_dict.keys())
                 print(Ci.keys())
-                # for tm in Ci:
-                #     plt.figure()
-                #     plt.plot(Ci[tm][int(N/2),],label=str(tm))
-                #     plt.savefig('./multi_projection/Ci_plot/{}_Gaussian_20_norm1_Ci_tm{}_plot.pdf'.format('_'.join(file_name.split('/')),tm ))
-                    # plt.show()
-                # raise SystemExit(0)
 
                 green_list = dict()
                 green_cum_list = dict()
@@ -527,112 +438,15 @@ for files in ['half_results']:
                 dis_grid[m_idx, i_idx] = distance/(tlimit_compare-start_time)
 
                 t = [i*0.1 for i in range(len(real_Green_center_tn))]
-                # if muti_num == 2:
-                    # plt.plot(t, real_Green_center,'-',color='black',label=file_name)
-                # if c_idx == 0:
-                #     axs[0].plot(t, real_Green_center,'-',color='black', label='DMRG')
-
-                # plt.figure()
                 t = [i*0.1*1.0 for i in range(tlimit)]
-                plt.plot(t, center_evolve,'-',color='red',label='Recursion for t > {}'.format(int(recursion_step*0.1)))
-                # plt.plot(t, center_evolve,'-',label='Recursion for t > {} spaceing = {}'.format(int(recursion_step*0.1), interval_step))
-                # axs[0].plot(t, center_evolve, style_list[c_idx], color=clist[c_idx], label='M = {}'.format(str(muti_num)))
-
-                # if interval_step == 1:
-                    # plt.axvline(x=0.1*recursion_step,ls='--',c='g')
-                    # plt.axvline(x=0.1*(recursion_step+(muti_num-1)*interval_step),ls='--',c='g')
-                    # axs[0].axvline(x=0.1*recursion_step,ls='--',c='g')
-                    # axs[0].axvline(x=0.1*(recursion_step+(muti_num-1)*interval_step),ls='--',c='g')
-                
-                # plt.tick_params(direction='in',labelsize=12)
-
-                # plt.title('mult:{}, interval:{}, res:{:.3f}, dis:{:.3f} '.format(muti_num, interval_step, np.real(residual), distance))
-                # plt.locator_params(nbins=6,axis='y')
-                # plt.legend(fontsize=16)
-                # plt.xlabel('t',fontsize=16)
-                # plt.ylabel("$ReC^{\dagger}C(x=0,t)$",fontsize=16)
-                # plt.ylabel("$ReG(x=0,t)$",fontsize=16)
-                # plt.tight_layout()   
-                # plt.savefig('./new_multi_projection/{}_mul{}_int{}_start_{}_long_run.pdf'.format('_'.join(file_name.split('/')), muti_num, interval_step, start_time))
-                
+                plt.plot(t, center_evolve,'-',color='red',label='Recursion for t > {}'.format(int(recursion_step*0.1)))                
                 res_step_list.append(np.real(residual))
                 dis_step_list.append(np.real(distance))
-                # plt.show()
 
-                # f.write(str(muti_num)+'\n')
-                # f.write(' '.join([str(t) for t in [i*0.1*1.0 for i in range(tlimit)]])+'\n')
-                # f.write(' '.join([str(v) for v in center_evolve])+'\n') 
-    
-        # axins3 = inset_axes(axs[1],
-        #                     width="30%", # width = 30% of parent_bbox
-        #                     height=1., # height : 1 inch
-        #                     loc=3)
-
-        # axins3 = axs[1].inset_axes([0.14,0.12,0.4,0.4])
-        # # axins3 = inset_axes(axs[1], width="100%", height="100%",
-        # #                     bbox_to_anchor=(1e-2, 2, 1e3, 3))
-        # print(residual_list)
-        # # axins3.plot([0.1*(start_time - t) for t in start_time_list], [float(v) for v in residual_list])
-        # axins3.plot([M for M in muti_num_grid], [float(v) for v in residual_list])
-        # axins3.set_xlabel('M',fontsize=10)
-        # axins3.set_ylabel('$<R|R>$',fontsize=10)
-        # axins3.tick_params(direction='in',labelsize=11)
-        # axins3.set_yticks(np.arange(0.5, 0.55, 0.025))
-
-        # # axs[0].plot([t*0.1 for t in start_time_list],[real_Green_center[t] for t in start_time_list],'*',markersize=15)
-        # # for t in start_time_list:
-        # #     axs[0].axvline(x=t*0.1,ls='--',c='black')
-        # for s_idx in range(len(start_time_list)):
-        #     axs[0].axvline(x=start_time_list[s_idx]*0.1,ls='--',c=clist[s_idx])
-
-        # # axs[0].axvline(x=start_time*0.1,ls='--',c='black')
-        # axs[0].legend(fontsize=12)
-        # axs[0].text(40,0.15, '(a)', fontsize=18)
-
-        # axs[0].tick_params(direction='in',labelsize=16)
-        # axs[0].locator_params(axis='y', nbins=6)
-        # axs[0].set_xlabel('t',fontsize=16)
-        # axs[0].set_ylabel("$ReG(x=0,t)$",fontsize=16)
-        # axs[0].set_ylim([-0.2,0.2])
-        
-        # axs[1].text(13,0.02, '(b)', fontsize=18)
-        # axs[1].tick_params(direction='in',labelsize=16)
-        # axs[1].legend(fontsize=12)
-        # axs[1].set_xlabel('t',fontsize=16)
-        # axs[1].set_ylabel("$ReG(x=0,t)_{diff}$",fontsize=16)
-        # plt.tight_layout()
-        # # plt.savefig('./figure_data/multi_recursion_{}_study_vsM_vlines_t10_1.pdf'.format('_'.join(file_name.split('/'))))
-        # plt.show()
-
-    # f.write(str('DMRG')+'\n')
-    # f.write(' '.join([str(t) for t in [i*0.1 for i in range(len(real_Green_center_tn))]])+'\n')
-    # f.write(' '.join([str(v) for v in real_Green_center])+'\n') 
-
-    # f.write(' '.join([str(np.real(v)) for v in residual_list])+'\n') 
-
-    # # plt.figure()
-    # plt.title('dir: {}, train_range: {}'.format('_'.join(file_name.split('/')), train_range))
-
-    # plt.plot([30,40,50,60,70,80], dis_step_list,label='distance')
-    # plt.plot(interval_step_grid, res_step_list,label='residual')
-    # plt.savefig('./new_multi_projection/stability/{}_change_spacing_multi_10_compare_list.pdf'.format('_'.join(file_name.split('/')) ))
-    # plt.show()
-    
-    # print(residual_list)
-    # plt.plot([4,8,12],residual_list)
     plt.show()
-
-    # f.close()
-    # plt.figure()
-    # plt.imshow(dis_grid)
-    # plt.ylabel('projections')
-    # plt.xlabel('interval')
-    # plt.colorbar()
-    # # plt.savefig('./new_multi_projection/{}_dis_grid.pdf'.format('_'.join(file_name.split('/'))))
 
     plt.figure()
     plt.imshow(dis_grid)
-    # plt.imshow(res_grid)
     plt.text(2,2,'(b)',fontsize=16)
     plt.ylabel('M',fontsize=16)
     plt.xlabel('spacing x 0.1',fontsize=16)

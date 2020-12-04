@@ -15,19 +15,11 @@ def burg_interpolation(data, order, extend_L, method='arcovar'):
     [a, E, K] = spectrum.burg.arburg(data, N)
     a = np.hstack((1,a))
 
-    # print(data)
-    # print(a)
-    # raise SystemExit(0)
-
     y = np.zeros(len(data)+extend_L,dtype=complex)
     x_pred = list(range(len(y)))
     y[0:M] = data[0:M]
-    # print(y,data[0:M])
-    # raise SystemExit(0)
-    # in reality, you would use `filter` instead of the for-loop
     for ii in range(M,P):    
         y[ii] = -sum(a[1:] * y[(ii-1):(ii-N-1):-1] )
-        # print(a[1:])
         print(y[ii])
     return y
 
@@ -37,16 +29,10 @@ def fourier_transform(sample,dag):
     N = n
     Aw = np.zeros(4*N,dtype=np.complex128)
     warray = np.zeros(4*N,dtype=np.complex128)
-    # warray = np.zeros(N,dtype=np.complex128)
-    # for wn in range(N):
     for wn in range(4*N):
         for x in range(n):
-            # if dag:
-            #     w = 2*np.pi*wn/N - 2*np.pi
-            # else:
             w = 2*np.pi*wn/N - 4*np.pi
             warray[wn] = w
-            # t = (x-int(n/2))*0.1                        # right
             if dag:
                 t = (x-int(n/2))*(0.1)                        # right
             else:
@@ -102,7 +88,6 @@ def get_spectral(green_signal,dag):
     wvalue = np.array(wvalue)/(2*np.pi)
     # wvalue = np.array(wvalue)/1000.0
     # print(np.sum(wvalue), warray[0] - warray[-1])
-    # raise SystemExit(0)
     return warray, wvalue
 
 def approximate_matrix(mm, N):
@@ -243,17 +228,9 @@ for dir_name in dir_name_list:
 
             extend_N = tlimit - train_time
             lp_order = 5
-            # Green_lp_real_list = list(center_green_k_list[0:int(train_time/2)])+list(burg_interpolation(center_green_k_list[int(train_time/2):train_time],lp_order,extend_N))
             Green_lp_real_list = list(burg_interpolation(center_green_k_list[0:train_time],lp_order,extend_N))
 
-            # plt.plot([0.1*i for i in range(len(Green_lp_real_list))], np.real(Green_lp_real_list),'blue',label='LP for t > {}'.format(int(arg_train_time*0.1)))
-            # plt.show()
-
             warray, lp_wvalue = get_spectral(Green_lp_real_list, dag)
-            # plt.plot(warray, lp_wvalue, 'blue', label='LP for t > {}'.format(int(train_time*0.1)))
-            # plt.title('Re {:.2f} | LP{:.2f}'.format(Re_w_distance, LP_w_distance))
-            # plt.legend()
-            # plt.show()
             return Green_lp_real_list, warray, lp_wvalue
 
         clist = ['black','red']
@@ -263,15 +240,9 @@ for dir_name in dir_name_list:
         for train_time,factor in zip([60,120],[4,2]):
             for k_val in [k_val]: 
                 green_continue_re_k_list, warray, continue_re_wvalue = get_akw_from_dir('', k_val, train_time, factor)
-                # plt.plot([0.1*i for i in range(len(green_continue_re_k_list))], np.real(green_continue_re_k_list), linewidth=2, label='Re for t > {} factor {}'.format(int(train_time*0.1), factor))
                 axs[0].plot([0.1*i for i in range(len(green_continue_re_k_list))], np.real(green_continue_re_k_list), style_list[idx], label='Recursion t > {}'.format(int(train_time*0.1)))
                 idx += 1
             cidx += 1
-        # plt.ylabel("$ReG(k_y=0,t)$",fontsize=16)
-        # plt.xlabel('t',fontsize=16)
-        # axs[0].set_xlim([-5,5])
-        # plt.savefig('./multi_projection/recursion_spectral_k{}_train_time{}_compare_factor{}.pdf'.format(k_index, train_time, factor))
-        # plt.show()
 
         clist = ['blue','green']
         total_train_time = 240
@@ -287,10 +258,6 @@ for dir_name in dir_name_list:
                 idx += 1
             cidx += 1
 
-        # plt.legend()
-        # plt.savefig('./multi_projection/re_lp_{}_green_k{:.2f}_ky0_train_time{}_compare.pdf'.format('_'.join(dir_name.split('/')), k_val, total_train_time))
-        # plt.show()
-        
         clist = ['black','red']
         # plt.figure()
         total_train_time = 240
@@ -299,7 +266,6 @@ for dir_name in dir_name_list:
         for train_time,factor in zip([60,120],[4,2]):
             for k_val in [k_val]:
                 green_continue_re_k_list, warray, continue_re_wvalue = get_akw_from_dir('', k_val, train_time, factor)
-                # plt.plot(warray, continue_re_wvalue, label='Re for t > {} factor {}'.format(int(train_time*0.1), factor))
                 axs[1].plot(warray, continue_re_wvalue, style_list[idx], label='Recursion t > {}'.format(int(train_time*0.1)))
                 idx += 1
             cidx += 1
@@ -307,9 +273,6 @@ for dir_name in dir_name_list:
         plt.xlim([-5,5])
         plt.xlabel('$\omega$',fontsize=16)
         plt.ylabel('$A(k_y=0,\omega)$',fontsize=16)
-        # plt.title('$k={:.2f}\pi$'.format(k_val))
-        # plt.savefig('./multi_projection/recursion_green_k{}_train_time{}_compare_factor{}.pdf'.format(k_index, train_time, factor))
-        # plt.show()
         
         clist = ['blue','green']
         cidx = 0
@@ -323,16 +286,11 @@ for dir_name in dir_name_list:
                     axs[1].plot(warray, lp_wvalue, style_list[idx], label='LP t > {}'.format(int(train_time*0.1)), markersize=1)
                 idx += 1
             cidx += 1
-        # plt.xlim([-5,5])
-        # plt.legend()
-        # plt.xlabel('$\omega$',fontsize=16)
-        # plt.ylabel('$A(k_y=0,\omega)$',fontsize=16)
 
         dmrg_green_k_list, warray, dmrg_wvalue = read_dmrg(lp_read_dir_name, k_val, 150)
 
         axs[0].plot([0.1*i for i in range(len(dmrg_green_k_list))], dmrg_green_k_list, linestyle=(0, (3, 1, 1, 1)), c='black', label = 'DMRG')
         
-        # axs[0].plot([6,12], [dmrg_green_k_list[i] for i in [60,120]],'o')
         axs[0].axvline(x=6, c='b', ls='--',linewidth=1.0)
         axs[0].axvline(x=12, c='b', ls='--',linewidth=1.0)
         axs[1].plot(warray, dmrg_wvalue, linestyle=(0, (3, 1, 1, 1)), c='black', label = 'DMRG')

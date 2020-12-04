@@ -13,18 +13,6 @@ from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
-# def fourier_transform(sample):
-#     n = len(sample)
-#     N = 2*n
-#     Aw = np.zeros(N,dtype=np.complex128)
-#     warray = np.zeros(N,dtype=np.complex128)
-#     for wn in range(N):
-#         for x in range(n):
-#             w = 2*np.pi*wn/N
-#             warray[wn] = w
-#             t = (x-int(n/2))*0.1                        # right
-#             Aw[wn] += 0.1*sample[x]*np.exp(1j*w*t)
-#     return warray, Aw
 
 def fourier_transform(sample):
     n = len(sample)
@@ -102,22 +90,8 @@ def k0_frequency(dir_name, N, time_limit_list, ticker_list, show=True):
         img_occilation = np.array(img_occilation)
         real_occilation = np.append(np.flip(real_occilation[1:],0),real_occilation)
         img_occilation = np.append(-1*np.flip(img_occilation[1:],0),img_occilation)
-        
-        # plt.plot(real_occilation,label='real')
-        # plt.plot(img_occilation,label='imag')
-        # np.savetxt('A_i_occilation.txt', (real_occilation,img_occilation), delimiter=',')   # X is an array
-        # plt.legend()
-        # plt.show()
 
         warray, w_value = fourier_transform(real_occilation+1j*img_occilation)
-        # plt.plot(warray,w_value)
-        # plt.show()
-        # raise SystemExit(0)
-        # warray, w_value = fourier_transform(real_occilation)
-
-        # w_value = DFT(real_occilation+1j*img_occilation)
-        # w_value = np.fft.fft(real_occilation+1j*img_occilation)
-        # warray = [val/2 for val in warray]
         print(max(warray)-min(warray))
         print(sum(w_value)/len(warray)*(max(warray)-min(warray)))
         print(np.max(w_value))
@@ -128,41 +102,12 @@ def k0_frequency(dir_name, N, time_limit_list, ticker_list, show=True):
             plt.ylabel('$N(\omega)$',fontsize=16)
             print(idx, ticker_list[idx],time_limit_list[idx])
             plt.plot(warray, w_value, ticker_list[idx], label='t={}'.format(time_limit_list[idx]*0.1))
-            # plt.plot(warray, w_value)
-
-            # x = [x for x in range(7)]
-            # kvals = [2*np.cos(k*2*np.pi/21.0) for k in x]
-            # x = [x for x in [2,3,4]]
-            # kvals = [-2*(np.cos(k*2*np.pi/7.0)) for k in x]
-            # print(kvals)
-            # ys = [1 for i in kvals]
-            # H_mat = get_H_mat(N)
-            # w, v = LA.eig(H_mat)
-            # for kval in w:
-            #     if kval > 0:
-            #         plt.axvline(x=kval,c='r')
-
-            # for i in range(N+1):
-            #     if i % 2 == 1:
-            #         plt.axvline(-2*np.cos(np.pi*i/(401+1)), c='r' )
         idx+=1
     plt.legend()
-    # plt.savefig('N600_U1_real_density.pdf')
     plt.show()  
-
-    # file_root = file_name.split('.')[0]
-    # file_name = '{}_warray.txt'.format(file_root)
-    # file_root = file_name.split('.')[0]
-
-    # file_name = dir_name+'warray.txt'
-    # save_file(file_name,warray,w_value)
 
     wdensity = np.stack([np.array(warray),np.array(w_value)])
     np.save(dir_name+'warray', wdensity)
-    # np.save(dir_name+'warray_{}'.format(time_limit), wdensity)
-    # if show:
-    #     plt.savefig('N401_U1_r100_30step_density.pdf')
-    #     plt.show()  
     return
 
 
@@ -459,32 +404,12 @@ for files in ['../ladder_system_test/{}_results'.format(args.doping)]:
                 gt = np.concatenate([Green_tn[start_time-t] for t in projection_points],axis=1)
                 print(gt.shape)
 
-                # plt.plot(overlap_larger_pinv[int(N/2),])
-                # plt.plot(overlap_pinv[int(N/2),])
-                # plt.show()
-                # raise SystemExit(0)
-
                 ct = np.matmul(gt, overlap_larger_pinv)
                 # ct = np.matmul(gt, overlap_pinv)
                 print(ct.shape)
 
                 restore_gt = np.matmul(ct, overlap_larger[:,0:N])
                 Green_tn_t60_restore = restore_gt[:,0:N]
-
-                # print(overlap_larger[:,0:N].shape)
-                # plt.plot(np.imag(overlap_larger[:,0:N][N:2*N,:][int(N/2),]),'-')
-                # plt.plot(np.imag(Green_original_tn[10][int(N/2),]),'*')
-                # plt.show()
-                # raise SystemExit(0)
-
-                # restore_gt_t60 = np.matmul(ct, np.concatenate([Green_original_tn[0], Green_original_tn[10], Green_original_tn[20],\
-                # Green_original_tn[30], Green_original_tn[40]],axis=0))
-
-                # plt.plot(Green_tn_t60_restore[int(N/2),])
-                # plt.plot(Green_tn[60][int(N/2),])
-                # plt.plot(restore_gt_t60[int(N/2),])
-                # plt.show()
-                # raise SystemExit(0)
 
                 for idx, t in enumerate(projection_points):
                     lb_Ci[start_time - t] = ct[:,idx*N:(idx+1)*N]
@@ -506,10 +431,6 @@ for files in ['../ladder_system_test/{}_results'.format(args.doping)]:
                 residual_list_dict = dict()
                 green_list_dict = dict()
                 cum_green_list= [0.0 for t in range(tlimit_compare)]
-                # for t in range(tlimit_compare):
-                #     residual_list_dict[t] = residual[t]
-                #     green_list_dict[t] = residual[t]  
-                # plt.plot([t*0.1 for t in range(tlimit_compare)], [Green_original_tn[t][int(N/2)-1,int(N/2)-1] for t in range(tlimit_compare)],label='dmrg')        
                 
                 for j in range(t_len):
                     t1 = recursion_step+j*interval_step
@@ -517,45 +438,18 @@ for files in ['../ladder_system_test/{}_results'.format(args.doping)]:
                     # Ci[t1] = np.matmul(overlap_pinv, residual[t1].T)        # wrong way to get Ci
                     Ci[t1] = np.matmul(residual[t1], overlap_pinv)        # this should be full
 
-                    # w, v = LA.eig(Ci[t1])
-                    # for kval in w:
-                    #     if np.abs(kval) > 1.0:
-                    #         print(kval)
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label=str(t1))
-
                     for t in range(t1, tlimit_compare):
                     # for t in range(t1, tlimit):
                         new_residual[t] = residual[t] - np.matmul(Ci[t1], Green_original_tn[t-t1])        # this should have weight
                         residual_list_dict[t] = new_residual[t]
                         cum_green_list[t] += np.matmul(Ci[t1], Green_original_tn[t-t1])
-                        # green_list_dict[t] = np.matmul(Ci[t1], Green_original_tn[t-t1])
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [new_residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label='after projection '+str(t1))
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [cum_green_list[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label='after projection '+str(int(0.1*t1)))
-
+                    
                     t1_list.append(t1*0.1)
                     residual_dict[t1] = new_residual[t1]
                     residual= new_residual.copy()
-                # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [new_residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label=str(muti_num))
-                # plt.legend()
-                # plt.savefig('./new_multi_projection/{}_multi_improve_residual_same_point.pdf'.format('_'.join(file_name.split('/'))))
-                # plt.show()
-                # raise SystemExit(0)
-
-                # plt.axhline(y=0,c='r')
-                # # plt.plot([t for t in sorted(green_list_dict.keys())], [green_list_dict[t][int(N/2)-1,int(N/2)-1] for t in sorted(residual_list_dict.keys())])
-                # plt.plot([t for t in sorted(residual_list_dict.keys())], [residual_list_dict[t][int(N/2)-1,int(N/2)-1] for t in sorted(residual_list_dict.keys())])
-                # # plt.plot(t1_list, [residual_dict[t][int(N/2)-1,int(N/2)-1] for t in range(recursion_step, recursion_step+t_len)],'r-.',label='residual')
-                # plt.show()
-                # raise SystemExit(0)
 
                 print(residual_dict.keys())
                 print(Ci.keys())
-                # for tm in Ci:
-                #     plt.figure()
-                #     plt.plot(Ci[tm][int(N/2),],label=str(tm))
-                #     plt.savefig('./multi_projection/Ci_plot/{}_Gaussian_20_norm1_Ci_tm{}_plot.pdf'.format('_'.join(file_name.split('/')),tm ))
-                    # plt.show()
-
                 green_list = dict()
                 green_cum_list = dict()
                 for tm in range(recursion_step,recursion_step+t_len):
@@ -569,8 +463,6 @@ for files in ['../ladder_system_test/{}_results'.format(args.doping)]:
                 lre_Green_tn = np.zeros((tlimit,Nreal*factor,Nreal*factor),dtype=complex)
                 for i in range(max(list(lb_Ci.keys()))):
                     lre_Green_tn[i,:,:] = Green_tn[i,:,:]
-                # plt.axvline(x = 60*0.1, c='g')
-                # for t in range(recursion_step+((t_len)-1)*interval_step,tlimit):
     
                 for t in range(start_time,tlimit):
                     for tm in Ci:
@@ -622,20 +514,6 @@ for files in ['../ladder_system_test/{}_results'.format(args.doping)]:
                     N601_U1_t = get_Green_snapshot_at_center('./{}/Green_sites'.format(file_name),t,N=Nreal)
                     real_Green_center_tn[i,:] = N601_U1_t
 
-                # import os
-                # green_save_dir = '{}/{}/Green_multi_re_t{}'.format(new_dir_name, case, start_time)
-                # if not os.path.isdir(green_save_dir):
-                #     os.mkdir(green_save_dir)
-
-                # for t in range(tlimit):
-                # # #     # with open('./results/smooth_center_compare/N{}_smooth_N{}_Green_matrix_t{}/Green_t{:.3f}.txt'.format(Nreal, Nshort, rstep, t*0.1),'w') as f:
-                #     # with open('./N400_Hubbard_U2/Green_matrix_rstep{}/Green_t{:.3f}.txt'.format(int(rstep*0.1), t*0.1),'w') as f:
-                #     with open('{}/Green_t{:.3f}.txt'.format(green_save_dir, t*0.1),'w') as f:
-                #         for i in range(N):
-                #             # f.write(str(i+1)+ ' ' + str(np.real(Green_tn[t,int(N/2)-1,i])) + ' ' + str(np.imag(Green_tn[t,int(N/2)-1,i])) + '\n' )
-                            # f.write(str(np.real(re_Green_tn[t,int(N/2)-1,i])) + ' ' + str(np.imag(re_Green_tn[t,int(N/2)-1,i])) + '\n' )
-
-                # plt.axvline(x=recursion_step*0.05,ls='--',c='green')
                 center_evolve = np.array([re_Green_tn[i,int(N/2)-1,int(N/2)-1]*1.0 for i in range(tlimit)])
                 real_Green_center = np.array([real_Green_center_tn[i,int(N/2)-1] for i in range(len(real_Green_center_tn))])
 
@@ -643,44 +521,18 @@ for files in ['../ladder_system_test/{}_results'.format(args.doping)]:
                 distance = distance/(tlimit_compare-start_time)
                 dis_grid[m_idx, i_idx] = distance/(tlimit_compare-start_time)
 
-                # plt.figure()
                 re_t = [i*0.1*1.0 for i in range(tlimit)]
-                # plt.plot(re_t, center_evolve,'-',color='red',label='Recursion for t > {}'.format(int(start_time*0.1)))
                 if i_idx == 0:
-                    # plt.plot(re_t[start_time:len(real_Green_center)], center_evolve[start_time:len(real_Green_center)] - real_Green_center[start_time:len(real_Green_center)],'--',label='Multistep for t > {}'.format(int(start_time*0.1)))
                     plt.plot(re_t[start_time:len(real_Green_center)], center_evolve[start_time:len(real_Green_center)] - real_Green_center[start_time:len(real_Green_center)],'--',label='Multistep M = 3')
 
-                # plt.plot(t, center_evolve,'-',label='Recursion for t > {}'.format(int(recursion_step*0.1)))
                 dmrg_t = [i*0.1 for i in range(len(real_Green_center_tn))]
-                # if muti_num == 2:
-                # plt.plot(t, real_Green_center,'-',color='black',label=file_name)
-                # plt.plot(dmrg_t, real_Green_center,'-',color='black',label='DMRG')
-
-                # plt.plot([t*0.1 for t in projection_points], [real_Green_center[t] for t in projection_points], '*', c='r')
-
                 lre_center_evolve = np.array([lre_Green_tn[i,int(N/2)-1,int(N/2)-1]*1.0 for i in range(tlimit)])
-                # plt.plot(re_t, lre_center_evolve,'-',color='blue',label='Expend Basis Recursion for t > {} N: {}'.format(int(start_time*0.1), muti_num))
-
-                # plt.plot(re_t[max(list(lb_Ci.keys())):len(real_Green_center)],lre_center_evolve[max(list(lb_Ci.keys())):len(real_Green_center)]-real_Green_center[max(list(lb_Ci.keys())):len(real_Green_center)], label='Expend Basis Recursion for t > {} N: {}'.format(int(start_time*0.1), muti_num))
                 plt.plot(re_t[max(list(lb_Ci.keys())):len(real_Green_center)],lre_center_evolve[max(list(lb_Ci.keys())):len(real_Green_center)]-real_Green_center[max(list(lb_Ci.keys())):len(real_Green_center)], style_list[i_idx],label='{}'.format(str([0.1*i for i in projection_points])))
 
                 plt.xlim([6,7])
                 lp_order = 5
                 extend_N = tlimit - start_time
                 Green_lp_real_list = list(burg_interpolation(real_Green_center[0:start_time],lp_order,extend_N))
-                # plt.plot([t*0.1 for t in range(len(Green_lp_real_list))],  Green_lp_real_list, c = 'blue', label='LP')
-
-                # save_file_name = '{}_mul{}_int{}_start_{}_savefile.txt'.format('_'.join(file_name.split('/')[1:]), muti_num, interval_step, start_time)
-                # def save_data(save_file_name, dmrg, recursion, lp):
-                #     with open('Green_extrapolation/{}'.format(save_file_name),'w') as f:  
-                #         f.write(' '.join([str(t) for t in dmrg[0]])+'\n')
-                #         f.write(' '.join([str(v) for v in dmrg[1]])+'\n')
-                #         f.write(' '.join([str(t) for t in recursion[0]])+'\n')
-                #         f.write(' '.join([str(v) for v in recursion[1]])+'\n')    
-                #         f.write(' '.join([str(t) for t in lp[0]])+'\n')
-                #         f.write(' '.join([str(v) for v in lp[1]])+'\n')     
-                #     return 
-                # save_data(save_file_name, [dmrg_t, real_Green_center], [re_t, center_evolve], [[t*0.1 for t in range(len(Green_lp_real_list))], Green_lp_real_list])
 
                 if muti_num == 10:
                     plt.axvline(x=0.1*recursion_step,ls='--',c='g')
@@ -701,27 +553,5 @@ for files in ['../ladder_system_test/{}_results'.format(args.doping)]:
                 dis_step_list.append(np.real(distance))
 
             plt.text(6.8,-0.01,'(a)',fontsize=16)    
-            # plt.savefig('./figures/multi_time_basis/Expand_basis_{}_mul{}_int{}_start_{}_neg_compare_error_points2_lines1.pdf'.format('_'.join(file_name.split('/')[2:]), muti_num, interval_step, start_time))
             plt.show()
 
-        # plt.figure()
-        # plt.title('dir: {}'.format('_'.join(file_name.split('/'))))
-        # plt.plot([30,40,50,60,70,80], dis_step_list,label='distance')
-        # plt.plot(interval_step_grid, res_step_list,label='residual')
-        # plt.savefig('./new_multi_projection/stability/{}_start_time_compare_list.pdf'.format('_'.join(file_name.split('/'))))
-        # plt.savefig('./Green_extrapolation/{}_mul{}_int{}_start_{}_long_run.pdf'.format('_'.join(file_name.split('/')[1:]), muti_num, interval_step, start_time))
-        # plt.show()
-
-    # plt.figure()
-    # plt.imshow(dis_grid)
-    # plt.ylabel('projections')
-    # plt.xlabel('interval')
-    # plt.colorbar()
-    # # plt.savefig('./new_multi_projection/{}_dis_grid.pdf'.format('_'.join(file_name.split('/'))))
-
-    # plt.figure()
-    # plt.imshow(res_grid)
-    # plt.ylabel('projections')
-    # plt.xlabel('interval')
-    # plt.colorbar()
-    # # plt.savefig('./new_multi_projection/{}_res_grid.pdf'.format('_'.join(file_name.split('/'))))

@@ -13,6 +13,18 @@ from sklearn.linear_model import Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 
+# def fourier_transform(sample):
+#     n = len(sample)
+#     N = 2*n
+#     Aw = np.zeros(N,dtype=np.complex128)
+#     warray = np.zeros(N,dtype=np.complex128)
+#     for wn in range(N):
+#         for x in range(n):
+#             w = 2*np.pi*wn/N
+#             warray[wn] = w
+#             t = (x-int(n/2))*0.1                        # right
+#             Aw[wn] += 0.1*sample[x]*np.exp(1j*w*t)
+#     return warray, Aw
 
 def fourier_transform(sample):
     n = len(sample)
@@ -49,7 +61,6 @@ def burg_interpolation(data, order, extend_L, method='arcovar'):
     # in reality, you would use `filter` instead of the for-loop
     for ii in range(M,P):    
         y[ii] = -sum(a[1:] * y[(ii-1):(ii-N-1):-1] )
-        print(y[ii])
     return y
 
 
@@ -100,7 +111,6 @@ def k0_frequency(dir_name, N, time_limit_list, ticker_list, show=True):
         warray, w_value = fourier_transform(real_occilation+1j*img_occilation)
         # plt.plot(warray,w_value)
         # plt.show()
-        # raise SystemExit(0)
         # warray, w_value = fourier_transform(real_occilation)
 
         # w_value = DFT(real_occilation+1j*img_occilation)
@@ -117,40 +127,11 @@ def k0_frequency(dir_name, N, time_limit_list, ticker_list, show=True):
             print(idx, ticker_list[idx],time_limit_list[idx])
             plt.plot(warray, w_value, ticker_list[idx], label='t={}'.format(time_limit_list[idx]*0.1))
             # plt.plot(warray, w_value)
-
-            # x = [x for x in range(7)]
-            # kvals = [2*np.cos(k*2*np.pi/21.0) for k in x]
-            # x = [x for x in [2,3,4]]
-            # kvals = [-2*(np.cos(k*2*np.pi/7.0)) for k in x]
-            # print(kvals)
-            # ys = [1 for i in kvals]
-            # H_mat = get_H_mat(N)
-            # w, v = LA.eig(H_mat)
-            # for kval in w:
-            #     if kval > 0:
-            #         plt.axvline(x=kval,c='r')
-
-            # for i in range(N+1):
-            #     if i % 2 == 1:
-            #         plt.axvline(-2*np.cos(np.pi*i/(401+1)), c='r' )
         idx+=1
     plt.legend()
-    # plt.savefig('N600_U1_real_density.pdf')
     plt.show()  
-
-    # file_root = file_name.split('.')[0]
-    # file_name = '{}_warray.txt'.format(file_root)
-    # file_root = file_name.split('.')[0]
-
-    # file_name = dir_name+'warray.txt'
-    # save_file(file_name,warray,w_value)
-
     wdensity = np.stack([np.array(warray),np.array(w_value)])
     np.save(dir_name+'warray', wdensity)
-    # np.save(dir_name+'warray_{}'.format(time_limit), wdensity)
-    # if show:
-    #     plt.savefig('N401_U1_r100_30step_density.pdf')
-    #     plt.show()  
     return
 
 
@@ -250,6 +231,22 @@ def get_Green_snapshot_at_center(dirname,t,N):
     return Green_snapshot
 
 
+N = 100
+def read_overlap(dir_name):
+    overlap = np.zeros((N,N),dtype=np.complex_)
+    for i in range(N):
+        line = [0 for _ in range(N)]
+        with open('./{}/Green/overlap/overlap{}.txt'.format(dir_name, i+1)) as f:
+            j = 0
+            for e in f:
+                nums = e.strip().split()
+                n = float(nums[1]) + 1j*float(nums[2])
+                line[j] = n
+                j+=1 
+        overlap[i,:] = line 
+    return overlap
+
+
 def interpolation(data, order, extend_L):
     # plt.plot(data, linewidth=0.8)
     # plt.show()
@@ -310,14 +307,6 @@ def get_ladder_translational_green(green,center_idx,path_to_ladder, large_N):
             green_dict[abs_relative_idx] = 0.5*(green[i]+green_dict[abs_relative_idx])
             index_dict[abs_relative_idx].append(relative_idx)
 
-    # for idx in green_dict:
-    #     if idx[0]+idx[1] <= 5:
-    #         print(idx, green_dict[idx])
-    # print(green_dict.keys(),len(green_dict.keys()))
-    # print(original_green_dict[1,0])
-    # print(original_green_dict[-1,0])
-    # print(index_dict)
-    # raise SystemExit(0)
     try:
         for i in range(large_N):
             for j in range(large_N):
@@ -339,9 +328,11 @@ parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--doping', type=str,
                      help='doping',default='4th')
 parser.add_argument('--start_time', type=int,
-                     help='start_time',default=60)
+                     help='start_time',default=100)
+# parser.add_argument('--start_time', type=int,
+#                      help='start_time',default=120)
 parser.add_argument('--U', type=int,
-                     help='U',default=1)
+                     help='U',default=8)
 args = parser.parse_args()
 
 N = 128
@@ -351,7 +342,7 @@ iy = 0
 leg0_sites = []
 leg1_sites = []
 for n in range(N*4):
-    print(n, ix, iy)
+    # print(n, ix, iy)
     if iy == 0:
         leg0_sites.append(n)
     else:
@@ -361,45 +352,13 @@ for n in range(N*4):
         iy = 1-iy
     else:
         ix+=1
-
-
-N = 100
-def read_overlap(case, U, N):
-    overlap = np.zeros((N,N),dtype=np.complex_)
-    for i in range(N):
-        line = [0 for _ in range(N)]
-        with open('.//overlap/overlap{}.txt'.format(case, U, i+1)) as f:
-            j = 0
-            for e in f:
-                nums = e.strip().split()
-                n = float(nums[1]) + 1j*float(nums[2])
-                line[j] = n
-                j+=1 
-        overlap[i,:] = line 
-    return overlap
-
-def get_full_overlap(case, U, N):
-    # overlap = np.zeros([N,N], dtype=np.complex)
-    overlap = []
-    for i in range(N):
-        onsite = []
-        with open('./overlap/{}_U{}/overlap_s{}.txt'.format(case, U, i+1)) as f:
-            for line in f:
-                content = line.strip().split()
-                onsite.append(float(content[0])+1j*float(content[1]))
-        
-        overlap.append(onsite)
-    overlap = np.array(overlap)   
-    # print(overlap.shape)
-    # plt.imshow(np.real(overlap))
-    # plt.show()
-    # raise SystemExit(0)
-    return overlap
     
-                 
+import gc
+evolve_facotr = 4
 # file_name = '8th_results/U8_dag/'
-for doping in ['half']:
+# for doping in ['4th']:
 # for doping in ['half','4th','8th']:
+for doping in ['half']:
 #     for case in ['U4','U4_dag']:
 # new_dir_name = './4th_results'
 # for files in ['../ladder_system_test/{}_results'.format(args.doping)]:
@@ -407,349 +366,276 @@ for doping in ['half']:
     new_dir_name = files.split('/')[-1]
     # for case in ['U{}'.format(args.U),'U{}_dag'.format(args.U)]:
     # for U in [1,2,4,8]:
-    for U in [1]:
-        # for case in ['U{}'.format(args.U)]:
-        case = 'U{}_dag'.format(U)
-        file_name = files+'/'+case+'/'
-        muti_num = 6
-        interval_step = 5
-        # start_time = 150
-        start_time = args.start_time
-        # muti_num_grid = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
-        # muti_num_grid = [i for i in range(1,muti_num*10)]
-        # muti_num_grid = [2,4,6,8,10,12]
-        # muti_num_grid = [10]
-        muti_num_grid = [10]
-        # interval_step_grid = [1,2,3,4,5,6,7,8,9,10]
-        interval_step_grid = [5]
-        # res_grid = np.zeros([len(muti_num_grid), len(interval_step_grid)])
-        # dis_grid = np.zeros([len(muti_num_grid), len(interval_step_grid)])
-        res_grid = np.zeros([151, len(interval_step_grid)])
-        dis_grid = np.zeros([151, len(interval_step_grid)])
-        res_step_list = []
-        dis_step_list = []
-        m_idx = 0
-        # plt.figure()
-        # for start_time in [30,40,50,60,70,80]:
-        # for start_time in [60]:
-        for m_idx, muti_num in enumerate(muti_num_grid):
-            for i_idx, interval_step in enumerate(interval_step_grid):
-                # m_idx = int(start_time/interval_step)
-                # muti_num = m_idx
-                print()
-                recursion_step = start_time - (muti_num-1)*interval_step
-                if recursion_step <= 0:
-                    res_grid[m_idx, i_idx] = res_grid[0, 0]
-                    dis_grid[m_idx, i_idx] = dis_grid[0, 0]
-                    continue
+    for U in [args.U]:
+        # for case in ['U{}'.format(args.U),'U{}_dag'.format(args.U)]:
+        # for case in ['U{}'.format(U),'U{}_dag'.format(U)]:
+        for case in ['U{}_dag'.format(U)]:
+            file_name = files+'/'+case+'/'
+            muti_num = 6
+            interval_step = 10
+            start_time = args.start_time
+            muti_num_grid = [10]
+            interval_step_grid = [5]
+            step_size = interval_step_grid[0]
+            res_grid = np.zeros([10, len(interval_step_grid)])
+            dis_grid = np.zeros([10, len(interval_step_grid)])
+            res_step_list = []
+            dis_step_list = []
+            m_idx = 0
+            # plt.figure()
+            # for start_time in [30,40,50,60,70,80]:
+            # for start_time in [60]:
+            for m_idx, muti_num in enumerate(muti_num_grid):
+            # for alpha in [0.1,1.0,10.0,50.0,60.0,70.0,80.0,100.0]:
+            # for alpha in [50.0,60.0]:
+                # m_idx = 0
+                # muti_num = 10
+                for i_idx, interval_step in enumerate(interval_step_grid):
+                    # muti_num = m_idx
+                    recursion_step = start_time - (muti_num-1)*interval_step
+                    if recursion_step <= 0:
+                        res_grid[m_idx, i_idx] = res_grid[0, 0]
+                        dis_grid[m_idx, i_idx] = dis_grid[0, 0]
+                        continue
 
-                tlimit_compare = 150
-                tlimit = 240
-                extend_N = 0
-                Nreal = 128
-                large_GN = 2*Nreal
-                large_N = 2*Nreal
-                factor = 2
-                overlap_Green = np.zeros((tlimit,large_N,large_N),dtype=complex)
-                Green_tn = np.zeros((tlimit,Nreal*factor,Nreal*factor),dtype=complex)
-                re_Green_tn = np.zeros((tlimit,Nreal*factor,Nreal*factor),dtype=complex)
-                Green_original_tn = np.zeros((tlimit_compare+1,Nreal*factor,Nreal*factor),dtype=complex)
-                real_Green_center_tn = np.zeros((tlimit_compare+1,Nreal),dtype=complex)
-                N = Nreal
-                for i in range(tlimit_compare+1):
-                    t = i*0.1
-                    Green_snap = get_Green_snapshot_at_center('./{}/Green_sites/'.format(file_name),t,N)
-                    # Green_tn[i] = get_2d_translational_green(Green_snap)
+                    tlimit_compare = 150
+                    tlimit = 500
+                    extend_N = 0
+                    Nreal = 128
+                    factor = 2
+                    large_GN = factor*Nreal
+                    large_N = factor*Nreal
                     
-                    # plt.imshow(np.real(Green_tn[i]))
-                    # print(Green_snap[int(N/2)-2])
-                    # print(Green_snap[int(N/2)-1])
-                    # print(Green_snap[int(N/2)])
-                    # print(Green_snap[int(N/2)+1])
-                    # plt.plot(Green_tn[i][int(N/2),],label='shift')
-                    
-                    if t == 0:
-                        overlap = get_ladder_translational_green(Green_snap, int(N/2)-1, path_to_ladder, large_N)
-                        # plt.plot(overlap[int(N/2)-1,:])
-                        # overlap = get_2d_translational_green(Green_snap, large_N)
-                        # plt.plot(overlap[int(N/2)-1,:])
-                    # plt.show()
-                    # raise SystemExit(0)
+                    overlap_Green = np.zeros((tlimit,large_N,large_N),dtype=complex)
+                    Green_tn = np.zeros((tlimit,Nreal*factor,Nreal*factor),dtype=complex)
+                    re_Green_tn = np.zeros((tlimit,Nreal*factor,Nreal*factor),dtype=complex)
+                    re_new_Green_tn = np.zeros((tlimit,Nreal*factor,Nreal*factor),dtype=complex)
+                    re_delta_new_Green_tn = np.zeros((tlimit,Nreal*factor,Nreal*factor),dtype=complex)
+                    Green_original_tn = np.zeros((tlimit_compare+1,Nreal*factor,Nreal*factor),dtype=complex)
+                    real_Green_center_tn = np.zeros((tlimit_compare+1,Nreal),dtype=complex)
+                    N = Nreal
+                    for i in range(tlimit_compare+1):
+                        t = i*0.1
+                        Green_snap = get_Green_snapshot_at_center('./{}/Green_sites/'.format(file_name),t,N)
+                                                
+                        if t == 0:
+                            overlap = get_ladder_translational_green(Green_snap, int(N/2)-1, path_to_ladder, large_N)
 
-                    # Green_tn[i] = get_2d_translational_green(Green_snap, large_N)
-                    Green_tn[i] = get_ladder_translational_green(Green_snap, int(N/2)-1, path_to_ladder, Nreal*factor)
-                    # plt.imshow(np.real(Green_tn[i]))
-                    # plt.plot(Green_tn[i][int(N/2),],label='trans')
-                    # plt.show()
-                    # raise SystemExit(0)
-                    Green_original_tn[i] = Green_tn[i]
+                        print('i: ',i)
+                        Green_tn[i] = get_ladder_translational_green(Green_snap, int(N/2)-1, path_to_ladder, Nreal*factor)
+                        Green_original_tn[i] = Green_tn[i]
 
-                # overlap = Green_tn[0]
-                # plt.imshow(np.real(overlap))
-                # plt.plot(overlap[int(N/2)-1,])
-                print('overlap.shape: ',overlap.shape)
-                overlap_pinv = np.linalg.pinv(overlap,rcond=1e-1)
-                # plt.plot(overlap_pinv[int(large_N/2)-1,])
+                    print('overlap.shape: ',overlap.shape)
+                    overlap_pinv = np.linalg.pinv(overlap,rcond=1e-1)
 
-                full_overlap = get_full_overlap(doping, U, Nreal)
-                full_overlap_pinv = np.linalg.pinv(full_overlap,rcond=1e-1)
-                # plt.imshow(np.real(overlap_pinv))
-                # plt.plot(overlap_pinv[int(N/2)-1,])
-                # plt.show()
-                # raise SystemExit(0)
+                    N_total = Nreal*factor
+                    Ci = dict()
+                    weight_list = [1.0 for _ in range(muti_num)]
+                    residual = np.zeros((tlimit_compare+1,Nreal*factor,Nreal*factor),dtype=complex)
+                    new_residual = np.zeros((tlimit_compare+1,Nreal*factor,Nreal*factor),dtype=complex)
+                    t_len = len(weight_list)
+                    for i in range(recursion_step+((t_len)-1)*interval_step):
+                        re_Green_tn[i,:,:] = Green_tn[i,:,:]
+                        re_new_Green_tn[i,:,:] = Green_tn[i,:,:]
+                        re_delta_new_Green_tn[i,:,:] = Green_tn[i,:,:]
+                    for i in range(tlimit_compare):
+                        residual[i,:] = Green_original_tn[i,:]
+                    t_list = []
+                    residual_dict = dict()
+                    t1_list = []
 
-                overlap_pinv = get_ladder_translational_green(full_overlap_pinv[int(N/2)-1], int(N/2)-1, path_to_ladder, Nreal*factor)
-                # overlap_pinv = get_ladder_translational_green(overlap_pinv[int(large_N/2)-1], int(large_N/2)-1, path_to_ladder, Nreal*factor)
-                # plt.imshow(np.real(overlap_pinv))
-                # plt.plot(overlap_pinv[int(large_N/2)-1,])
-                # plt.show()
-                # raise SystemExit(0)
+                    residual_list_dict = dict()
+                    green_list_dict = dict()
+                    cum_green_list= [0.0 for t in range(tlimit_compare)]
 
-                Ci = dict()
-                weight_list = [1.0 for _ in range(muti_num)]
-                residual = np.zeros((tlimit_compare+1,Nreal*factor,Nreal*factor),dtype=complex)
-                new_residual = np.zeros((tlimit_compare+1,Nreal*factor,Nreal*factor),dtype=complex)
-                t_len = len(weight_list)
-                for i in range(recursion_step+((t_len)-1)*interval_step):
-                    re_Green_tn[i,:,:] = Green_tn[i,:,:]
-                for i in range(tlimit_compare):
-                    residual[i,:] = Green_original_tn[i,:]
-                t_list = []
-                residual_dict = dict()
-                t1_list = []
-
-                residual_list_dict = dict()
-                green_list_dict = dict()
-                cum_green_list= [0.0 for t in range(tlimit_compare)]
-                # for t in range(tlimit_compare):
-                #     residual_list_dict[t] = residual[t]
-                #     green_list_dict[t] = residual[t]  
-                # plt.plot([t*0.1 for t in range(tlimit_compare)], [Green_original_tn[t][int(N/2)-1,int(N/2)-1] for t in range(tlimit_compare)],label='dmrg')        
-                
-                for j in range(t_len):
-                    t1 = recursion_step+j*interval_step
-                    print('t1: ',t1)
-                    # Ci[t1] = np.matmul(overlap_pinv, residual[t1].T)        # wrong way to get Ci
-                    Ci[t1] = np.matmul(residual[t1], overlap_pinv)        # this should be full
-
-                    # w, v = LA.eig(Ci[t1])
-                    # for kval in w:
-                    #     if np.abs(kval) > 1.0:
-                    #         print(kval)
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label=str(t1))
-
-                    for t in range(t1, tlimit_compare):
-                    # for t in range(t1, tlimit):
-                        new_residual[t] = residual[t] - np.matmul(Ci[t1], Green_original_tn[t-t1])        # this should have weight
-                        residual_list_dict[t] = new_residual[t]
-
-                        cum_green_list[t] += np.matmul(Ci[t1], Green_original_tn[t-t1])
-                        # green_list_dict[t] = np.matmul(Ci[t1], Green_original_tn[t-t1])
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [new_residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label='after projection '+str(t1))
-                    # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [cum_green_list[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label='after projection '+str(int(0.1*t1)))
-
-                    t1_list.append(t1*0.1)
-                    residual_dict[t1] = new_residual[t1]
-                    residual= new_residual.copy()
-                # plt.plot([t*0.1 for t in range(t1, tlimit_compare)], [new_residual[t][int(N/2)-1,int(N/2)-1] for t in range(t1, tlimit_compare)],label=str(muti_num))
-                # plt.legend()
-                # plt.savefig('./new_multi_projection/{}_multi_improve_residual_same_point.pdf'.format('_'.join(file_name.split('/'))))
-                # plt.show()
-                # raise SystemExit(0)
-
-                # plt.axhline(y=0,c='r')
-                # # plt.plot([t for t in sorted(green_list_dict.keys())], [green_list_dict[t][int(N/2)-1,int(N/2)-1] for t in sorted(residual_list_dict.keys())])
-                # plt.plot([t for t in sorted(residual_list_dict.keys())], [residual_list_dict[t][int(N/2)-1,int(N/2)-1] for t in sorted(residual_list_dict.keys())])
-                # # plt.plot(t1_list, [residual_dict[t][int(N/2)-1,int(N/2)-1] for t in range(recursion_step, recursion_step+t_len)],'r-.',label='residual')
-                # plt.show()
-                # raise SystemExit(0)
-
-                print(residual_dict.keys())
-                print(Ci.keys())
-                # for tm in Ci:
-                #     plt.figure()
-                #     plt.plot(Ci[tm][int(N/2),],label=str(tm))
-                #     plt.savefig('./multi_projection/Ci_plot/{}_Gaussian_20_norm1_Ci_tm{}_plot.pdf'.format('_'.join(file_name.split('/')),tm ))
-                    # plt.show()
-                # raise SystemExit(0)
-
-                green_list = dict()
-                green_cum_list = dict()
-                for tm in range(recursion_step,recursion_step+t_len):
-                    green_list[tm] = dict()
-                    green_cum_list[tm] = dict()
-                    for t in range(recursion_step+t_len):
-                        green_cum_list[tm][t] = re_Green_tn[t].copy()
-                        green_list[tm][t] = re_Green_tn[t].copy()
-
-                for t in range(recursion_step+((t_len)-1)*interval_step,tlimit):
                     for j in range(t_len):
-                    # for j in range(12):
-                        tm = recursion_step+j*interval_step
-                        if t-tm >= 0:
-                            re_Green_tn[t] += np.matmul(Ci[tm],re_Green_tn[t-tm])
-                        
-                cgi = 0.0
-                for tm in Ci:
-                    for i in range(N):
-                        cgi += np.conj(Ci[tm][int(N/2),i])*Green_tn[tm][int(N/2),i]
-                        cgi += Ci[tm][int(N/2),i]*np.conj(Green_tn[tm][int(N/2),i])
-                print('original cgi: ',cgi)
+                        t1 = recursion_step+j*interval_step
+                        print('t1: ',t1)
+                        Ci[t1] = np.matmul(residual[t1], overlap_pinv)        # this should be full
+                        for t in range(t1, tlimit_compare):
+                            new_residual[t] = residual[t] - np.matmul(Ci[t1], Green_original_tn[t-t1])        # this should have weight
+                            residual_list_dict[t] = new_residual[t]
+                            cum_green_list[t] += np.matmul(Ci[t1], Green_original_tn[t-t1])
+                        t1_list.append(t1*0.1)
+                        residual_dict[t1] = new_residual[t1]
+                        residual= new_residual.copy()
 
-                ccgi = 0.0
-                for tm in Ci:
-                    for i in range(N):
-                        for j in range(N):
-                            ccgi += Ci[tm][int(N/2),i]*np.conj(Ci[tm][int(N/2),j])*overlap[i][j]
-                print('original ccgi: ',ccgi)
-                print('original residual: ', overlap[int(N/2)][int(N/2)] - cgi + ccgi)
+                    green_list = dict()
+                    green_cum_list = dict()
+                    for tm in range(recursion_step,recursion_step+t_len):
+                        green_list[tm] = dict()
+                        green_cum_list[tm] = dict()
+                        for t in range(recursion_step+t_len):
+                            green_cum_list[tm][t] = re_Green_tn[t].copy()
+                            green_list[tm][t] = re_Green_tn[t].copy()
 
-                cgi = 0.0
-                for tm in Ci:
-                    cgi += 2*np.real(np.dot( np.conj(Ci[tm][int(N/2),:]), Green_tn[tm][int(N/2),:] ))
-                print('cgi: ',cgi)
+                    nl = int(10/0.5)
+                    Ci_LP_matrix = np.zeros([large_N*nl,large_N*nl],dtype=complex)
+                    for idx, t in enumerate(sorted(Ci)):
+                        Ci_LP_matrix[0:large_N,(nl-len(Ci)+idx)*large_N:(nl-len(Ci)+idx+1)*large_N] = Ci[t]
 
-                ccgi = 0.0
-                for tm in Ci:
-                    for tn in Ci:
-                        if tm >= tn:
-                            ccgi += np.dot( np.conj(Ci[tm][int(N/2),:]), np.matmul( Green_tn[abs(tm-tn)], Ci[tn][int(N/2),:]  ) )
+                    for idx in range(nl):
+                        if idx+1 < nl:
+                            Ci_LP_matrix[(idx+1)*large_N:(idx+2)*large_N,idx*large_N:(idx+1)*large_N] = np.diag([1.0 for _ in range(large_N)])
+                    
+                    print('Ci_LP_matrix: ',Ci_LP_matrix.shape)
+                    compute_before = False
+                    if not compute_before:
+                        s, w = np.linalg.eig(Ci_LP_matrix)
+                        np.save('./recursion_matrix/doping_{}_case_{}_eigvals.npy'.format(doping, case), s)
+                        np.save('./recursion_matrix/doping_{}_case_{}_eigvectors.npy'.format(doping, case), w)
+                    else:
+                        print('start loading')
+                        s = np.load('./recursion_matrix/doping_{}_case_{}_eigvals.npy'.format(doping, case))
+                        w = np.load('./recursion_matrix/doping_{}_case_{}_eigvectors.npy'.format(doping, case))
+                        print('after loading')
+                    new_s = s
+                    new_s = []
+                    delta_s = []
+                    print('eig')
+
+                    count = 0
+                    for i in range(len(s)):
+                        if np.abs(s[i]) > 1.0:
+                            print(s[i])
+                            count += 1
+                            new_s.append(1.0/np.conj(s[i]))
+                            delta_s.append( s[i]/(np.abs(s[i])*1.000001)-s[i] )
                         else:
-                            ccgi += np.dot( np.conj(Ci[tm][int(N/2),:]), np.matmul( np.conj(Green_tn[abs(tm-tn)]), Ci[tn][int(N/2),:]  ) )
-                print('ccgi: ',ccgi)
+                            new_s.append(s[i])
+                            delta_s.append(0.0)
 
-                residual = overlap[int(N/2)][int(N/2)] - cgi + ccgi
-                print('residual: ', overlap[int(N/2)][int(N/2)] - cgi + ccgi)
-                res_grid[m_idx, i_idx] = residual
+                    circle_x_list = []
+                    circle_y_list = []
+                    import math
+                    for i in range(100):
+                        circle_x_list.append(math.cos((i/100.0)*2*np.pi)) 
+                    
+                    w_inv = np.linalg.pinv(w,rcond=1e-5)
+                    delta_Ci_LP_matrix = np.matmul(np.matmul(w, np.diag(delta_s)),w_inv)
 
-                for i in range(tlimit_compare+1):
-                    t = 0.1*i
-                    N601_U1_t = get_Green_snapshot_at_center('./{}/Green_sites'.format(file_name),t,N=Nreal)
-                    real_Green_center_tn[i,:] = N601_U1_t
+                    del w
+                    del w_inv
 
-                # import os
-                # green_save_dir = '{}/{}/Green_multi_re_t{}_factor{}'.format(new_dir_name, case, start_time, factor)
-                # if not os.path.isdir(green_save_dir):
-                #     os.mkdir(green_save_dir)
+                    new_delta_Ci_LP_matrix = Ci_LP_matrix + delta_Ci_LP_matrix
+                    del Ci_LP_matrix
+                    gc.collect()
+                    
+                    new_delta_green_array = dict()
+                    delta_green_array = dict()
+                    for t in range(start_time):
+                        new_delta_green_array[t] = Green_tn[t,:,:]
+                        delta_green_array[t] = Green_tn[t,:,:]
+                    step_t = 5
+                    for step_t in range(interval_step_grid[0]):
+                        print('step_t: ',step_t)
+                        Ci_LP_vector = np.zeros([large_N*nl,large_N],dtype=complex)
+                        for idx, t in enumerate([start_time-(i+1)*step_size+step_t for i in range(nl)]):
+                            Ci_LP_vector[idx*large_N:(idx+1)*large_N,:] = re_Green_tn[t]
 
-                # for t in range(tlimit):
-                # # #     # with open('./results/smooth_center_compare/N{}_smooth_N{}_Green_matrix_t{}/Green_t{:.3f}.txt'.format(Nreal, Nshort, rstep, t*0.1),'w') as f:
-                #     # with open('./N400_Hubbard_U2/Green_matrix_rstep{}/Green_t{:.3f}.txt'.format(int(rstep*0.1), t*0.1),'w') as f:
-                #     with open('{}/Green_t{:.3f}.txt'.format(green_save_dir, t*0.1),'w') as f:
-                #         # for i in range(N):
-                #         for i in range(large_GN):
-                #             # f.write(str(i+1)+ ' ' + str(np.real(Green_tn[t,int(N/2)-1,i])) + ' ' + str(np.imag(Green_tn[t,int(N/2)-1,i])) + '\n' )
-                #             f.write(str(np.real(re_Green_tn[t,int(large_GN/2)-1,i])) + ' ' + str(np.imag(re_Green_tn[t,int(large_GN/2)-1,i])) + '\n' )
+                        new_Ci_LP_vector = np.empty_like(Ci_LP_vector)
+                        new_Ci_LP_vector[:] = Ci_LP_vector
+                        
+                        new_delta_Ci_LP_vector = np.empty_like(new_Ci_LP_vector)
+                        new_delta_Ci_LP_vector[:] = new_Ci_LP_vector
+                        
+                        delta_Ci_LP_vector = np.empty_like(new_delta_Ci_LP_vector)
+                        delta_Ci_LP_vector[:] = new_delta_Ci_LP_vector
 
-                plt.axvline(x=recursion_step*0.05,ls='--',c='green')
+                        green_center_list = []
+                        new_green_center_list = []
+                        new_delta_green_center_list = []
+                        
+                        rescaled_green_list = []
+                        LP_time_list = []
+                        idx_t = 0
+                        for t in range(start_time,tlimit,step_size):
+                            print('t: ',t)
 
-                leg0_green_array = []
-                leg1_green_array = []
-                ky0_green_array = []
-                for t in range(tlimit):
-                    green_slice = re_Green_tn[t,int(Nreal*factor/2)-1,:]
-                    leg0_green = [np.real(green_slice[i]) for i in range(len(green_slice)) if i in leg0_sites]
-                    leg1_green = [np.imag(green_slice[i]) for i in range(len(green_slice)) if i in leg1_sites]
-                    # plt.plot(leg0_green)
-                    leg0_green_array.append(leg0_green)
-                    leg1_green_array.append(leg1_green)
-                    ky0_list = np.array(leg0_green) + np.array(leg1_green)
-                    ky0_green_array.append(ky0_list)
+                            delta_Ci_LP_vector = np.matmul(new_delta_Ci_LP_matrix, delta_Ci_LP_vector)
+                            delta_green_at_t = delta_Ci_LP_vector[0:large_N,:]
 
-                center_evolve = np.array([re_Green_tn[i,int(large_GN/2)-1,int(large_GN/2)-1]*1.0 for i in range(tlimit)])
-                real_Green_center = np.array([real_Green_center_tn[i,int(N/2)-1] for i in range(len(real_Green_center_tn))])
+                            LP_time_list.append(start_time*0.1+1.0*idx_t+step_t*0.1)
+                            delta_green_array[start_time+step_size*idx_t+step_t*1] = delta_green_at_t
+                            rescaled_green_list.append(delta_green_at_t)
+                            idx_t += 1
+                    
+                    del new_delta_Ci_LP_matrix
+                    gc.collect()
 
-                plt.figure()
-                center_evolve_array = np.array([re_Green_tn[i,int(Nreal*factor/2)-1,:]*1.0 for i in range(tlimit)])
-                # plt.imshow(np.flip(np.abs(center_evolve_array)), aspect='auto', extent=[0,large_N,0,25],cmap='jet')
-                plt.imshow(np.flip(np.abs(ky0_green_array)), aspect='auto', extent=[0,len(ky0_green_array[0]),0,25],cmap='jet')
-                # center_evolve[i] for i in r
-                plt.tick_params('t(unit=0.1)')
-                # plt.yticks(np.arange(0, 25, 1))
-                plt.ylabel('t(unit=0.1)')
-                plt.xlabel('x')
-                # plt.savefig('./Edge_effect/ladder_trans_2N/center_evolve_array_{}_{}_ky0_green_mul{}.pdf'.format(doping, case, muti_num))
-                plt.show()
+                    norm_scale_list = []
+                    for i in range(len(rescaled_green_list)):
+                        norm_scale_list.append(np.sum(np.abs(rescaled_green_list[i]))/np.sum(np.abs(rescaled_green_list[-1])))
 
-                plt.figure()
-                for i in range(0,23,4):
-                    # plt.plot(np.real(re_Green_tn[i*10,int(Nreal*factor/2)-1,])+0.1*i)
-                    plt.plot(np.real(ky0_green_array[i*10])+0.1*i)
-                    plt.text(1,0.1*i,'t='+str(i))
-                    # print(np.real(re_Green_tn[i*10,int(N/2)-1,]))
-                plt.xlabel('x')
-                # plt.savefig('./Edge_effect/ladder_trans_2N/slice_center_evolve_array_{}_{}_ky0_green_mul{}.pdf'.format(doping, case, muti_num))
-                plt.show()
+                    print('LP_time_list: ',LP_time_list)
+                    plt.plot(LP_time_list, norm_scale_list,'--',label='norm')
 
-                distance = np.sum(np.abs(real_Green_center[start_time:tlimit_compare]-center_evolve[start_time:tlimit_compare]))
-                distance = distance/(tlimit_compare-start_time)
-                dis_grid[m_idx, i_idx] = distance/(tlimit_compare-start_time)
+                    import os
+                    green_save_dir = '{}/{}/Green_multi_delta_re_matrix_t{}_tlimit{}_factor{}'.format(new_dir_name, case, start_time, tlimit, factor)
+                    if not os.path.isdir(green_save_dir):
+                        os.mkdir(green_save_dir)
 
-                plt.figure()
-                re_t = [i*0.1*1.0 for i in range(tlimit)]
-                plt.plot(re_t, center_evolve,'-',color='red',label='Recursion for t > {}'.format(int(start_time*0.1)))
-                # plt.plot(t, center_evolve,'-',label='Recursion for t > {}'.format(int(recursion_step*0.1)))
-                dmrg_t = [i*0.1 for i in range(len(real_Green_center_tn))]
-                # if muti_num == 2:
-                # plt.plot(t, real_Green_center,'-',color='black',label=file_name)
-                plt.plot(dmrg_t, real_Green_center,'-',color='black',label='DMRG')
+                    for t in range(tlimit):
+                        with open('{}/Green_t{:.3f}.txt'.format(green_save_dir, t*0.1),'w') as f:
+                            for i in range(large_GN):
+                                f.write(str(np.real(delta_green_array[t][int(large_GN/2)-1,i])) + ' ' + str(np.imag(delta_green_array[t][int(large_GN/2)-1,i])) + '\n' )
 
-                lp_order = 5
-                extend_N = tlimit - start_time
-                Green_lp_real_list = list(burg_interpolation(real_Green_center[0:start_time],lp_order,extend_N))
-                plt.plot([t*0.1 for t in range(len(Green_lp_real_list))],  Green_lp_real_list, c = 'blue', label='LP')
+                    delta_time_list = [t for t in sorted(delta_green_array.keys())]
+                    plt.plot([t*0.1 for t in delta_time_list], [delta_green_array[t][int(large_GN/2)-1,int(large_GN/2)-1] for t in delta_time_list],'-',label='delta self matrix')
 
-                # save_file_name = '{}_mul{}_int{}_start_{}_factor{}_savefile.txt'.format('_'.join(file_name.split('/')[1:]), muti_num, interval_step, start_time, factor)
-                # def save_data(save_file_name, dmrg, recursion, lp):
-                #     with open('Green_extrapolation/{}'.format(save_file_name),'w') as f:  
-                #         f.write(' '.join([str(t) for t in dmrg[0]])+'\n')
-                #         f.write(' '.join([str(v) for v in dmrg[1]])+'\n')
-                #         f.write(' '.join([str(t) for t in recursion[0]])+'\n')
-                #         f.write(' '.join([str(v) for v in recursion[1]])+'\n')    
-                #         f.write(' '.join([str(t) for t in lp[0]])+'\n')
-                #         f.write(' '.join([str(v) for v in lp[1]])+'\n')     
-                #     return 
-                # save_data(save_file_name, [dmrg_t, real_Green_center], [re_t, center_evolve], [[t*0.1 for t in range(len(Green_lp_real_list))], Green_lp_real_list])
+                    re_Green_tn = np.zeros((tlimit,Nreal*factor,Nreal*factor),dtype=complex)
+                    for i in range(recursion_step+((t_len)-1)*interval_step):
+                        re_Green_tn[i,:,:] = Green_tn[i,:,:]
 
-                if muti_num == 10:
-                    plt.axvline(x=0.1*recursion_step,ls='--',c='g')
-                    plt.axvline(x=0.1*(recursion_step+(muti_num-1)*interval_step),ls='--',c='g')
+                    new_s = []
+                    for i in range(len(s)):
+                        if np.abs(s[i]) > 1.0:
+                            new_s.append(1.0/s[i])
+                        else:
+                            new_s.append(s[i])
 
-                plt.tick_params(direction='in',labelsize=12)
-                # plt.title('mult:{}, interval:{}, res:{:.3f}, dis:{:.3f} '.format(muti_num, interval_step, np.real(residual), distance))
-                plt.locator_params(nbins=6,axis='y')
-                plt.legend(fontsize=14)
-                # plt.legend()
-                plt.xlabel('t',fontsize=16)
-                # plt.ylabel("$ReC^{\dagger}C(x=0,t)$",fontsize=16)
-                plt.ylabel("$ReG(x=0,t)$",fontsize=16)
-                plt.ylim([-0.2,0.2])
-                plt.tight_layout()   
-                # plt.savefig('./Edge_effect/ladder_trans_2N/{}_mul{}_int{}_start_{}_long_run.pdf'.format('_'.join(file_name.split('/')[1:]), muti_num, interval_step, start_time))
-                
-                res_step_list.append(np.real(residual))
-                dis_step_list.append(np.real(distance))
-                plt.show()
-            
+                    for t in range(recursion_step+((t_len)-1)*interval_step,tlimit):
+                        for j in range(t_len):
+                            tm = recursion_step+j*interval_step
+                            if t-tm >= 0:
+                                re_Green_tn[t] += np.matmul(Ci[tm],re_Green_tn[t-tm])
 
-        # plt.figure()
-        # plt.title('dir: {}'.format('_'.join(file_name.split('/'))))
-        # plt.plot([30,40,50,60,70,80], dis_step_list,label='distance')
-        # plt.plot(interval_step_grid, res_step_list,label='residual')
-        # plt.savefig('./new_multi_projection/stability/{}_start_time_compare_list.pdf'.format('_'.join(file_name.split('/'))))
-        # plt.savefig('./Green_extrapolation/{}_mul{}_int{}_start_{}_long_run.pdf'.format('_'.join(file_name.split('/')[1:]), muti_num, interval_step, start_time))
-        # plt.show()
+                    print('Ci: ',Ci.keys())
+                    interval_step_time_list = []
+                    interval_Green_list = []
+                    interval_Green_tn_dict = dict()
 
-    # plt.figure()
-    # plt.imshow(dis_grid)
-    # plt.ylabel('projections')
-    # plt.xlabel('interval')
-    # plt.colorbar()
-    # # plt.savefig('./new_multi_projection/{}_dis_grid.pdf'.format('_'.join(file_name.split('/'))))
+                    for t in range(0,start_time,interval_step):
+                        interval_Green_tn_dict[t] = re_Green_tn[t]
+                        
+                    for t in range(start_time,start_time+interval_step*10,interval_step):
+                        interval_step_time_list.append(t*0.1)
+                        for j in range(t_len):
+                            tm = recursion_step+j*interval_step
+                            if j == 0:
+                                interval_Green_tn_dict[t] = 0
+                            interval_Green_tn_dict[t] += np.matmul(Ci[tm],interval_Green_tn_dict[t-tm])
+                            
+                    for t in range(start_time,start_time+interval_step*10,interval_step):
+                        interval_Green_list.append(interval_Green_tn_dict[t][int(large_GN/2)-1,int(large_GN/2)-1])
 
-    # plt.figure()
-    # plt.imshow(res_grid)
-    # plt.ylabel('projections')
-    # plt.xlabel('interval')
-    # plt.colorbar()
-    # # plt.savefig('./new_multi_projection/{}_res_grid.pdf'.format('_'.join(file_name.split('/'))))
+                    re_t = [i*0.1*1.0 for i in range(tlimit)]
+                    center_evolve = np.array([re_Green_tn[i,int(large_GN/2)-1,int(large_GN/2)-1]*1.0 for i in range(tlimit)])
+                    plt.plot(re_t, center_evolve,'-',label='Re')
+                    plt.xlabel('t',fontsize=16)
+                    plt.ylabel("$ReG(x=0,t)$",fontsize=16)
+                    print(interval_step_time_list)
+                    print(interval_Green_list)
+                    print(len(interval_Green_list))
+                    norm_scale_list = []
+                    for i in range(tlimit):
+                        norm_scale_list.append(np.sum(np.abs(re_Green_tn[i]))/np.sum(np.abs(re_Green_tn[-1])))
+
+                    for t in interval_Green_tn_dict:
+                        u, s, vh = np.linalg.svd(interval_Green_tn_dict[t])
+                        print(s[0:10])
+                    
+                    plt.legend()
+                    # plt.savefig('./instability/8th_U{}_large_re_matrix_multi_num{}_space{}_evolution_compare.pdf'.format(args.U, muti_num,interval_step))
+                    plt.show()
+

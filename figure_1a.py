@@ -30,7 +30,6 @@ def complete_evo(occilation):
     occilation = np.append(np.conj(np.flip(occilation[1:],0)),occilation)
     return occilation
 
-
 def k0_frequency(dir_name, N, time_limit_list, ticker_list, show=True):
     idx = 0
     for time_limit in time_limit_list:

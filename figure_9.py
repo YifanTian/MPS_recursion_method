@@ -16,38 +16,21 @@ from scipy.interpolate import interp1d
 
 
 def read_warray(method, ky, dir_name, method_dir):
-    # dir_name = '2D_N120_hubbard_U4'
     idx = 0
-    # with open('./{}/RAkw/{}_{}_dict.txt'.format(dir_name, method, ky),'r') as f:
-    # with open('./{}/new_Akw/{}_{}_dict.txt'.format(dir_name, method, ky),'r') as f:
-    # with open('./{}/long_multi_Akw_t120_factor2/{}_{}_dict.txt'.format(dir_name, method, ky),'r') as f:
-    # with open('./{}/long_multi_Akw_t120_factor4/{}_{}_dict.txt'.format(dir_name, method, ky),'r') as f:
     with open('./{}/{}/{}_{}_dict.txt'.format(dir_name, method_dir, method, ky),'r') as f:
     # with open('./{}/Akw/recursion_lp_ky1_dict.txt'.format(dir_name),'r') as f:
         lines = f.readlines()
-        # line = f.read()
         warray = lines[0]
-        # print(warray)
         warray = [np.real(np.complex(num)) for num in warray.split()]
-        # print(len(warray))
-        # print(warray[0:5])
-        # raise SystemExit(0)
 
         wvalue_array = []
         for i in range(len(lines[1:])):
             if i % 2 == 0:
                 kval = float(lines[i+1].strip())
-                # print(kval)
             else:
                 wvalue = [np.complex(num) for num in lines[i+1].split()]
                 wvalue_array.append(wvalue)
-                # print(len(wvalue))
-                # plt.plot(warray, wvalue)
-                # plt.show()
         wvalue_array = np.array(wvalue_array)
-            # print(line)
-            # kval, wvalue = line.split(' ')
-            # print(line)
     return warray, wvalue_array
 
 font = {'family': 'serif',
